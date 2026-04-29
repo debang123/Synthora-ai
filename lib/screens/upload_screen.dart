@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:html' as html;
 import '../utils/theme.dart';
 import '../widgets/custom_button.dart';
 import '../services/clarity_api_service.dart';
@@ -74,22 +75,61 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enhancement failed. Please ensure the backend is running.')),
+          const SnackBar(content: Text('Processing failed. Please ensure the backend is running.')),
         );
       }
     }
   }
 
-  Widget _buildImagePreview(XFile file) {
+  void _downloadResult() {
+    if (_resultData == null) return;
+    final url = _resultData!['enhanced_url'];
+    
     if (kIsWeb) {
-      return Image.network(file.path, fit: BoxFit.cover);
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute("download", "synthora_masterpiece.jpg")
+        ..click();
     } else {
-      return Image.file(File(file.path), fit: BoxFit.cover);
+      // Fallback for non-web
+      _apiService.openUrl(url);
     }
+  }
+
+  Widget _buildImagePreview(XFile file, {required VoidCallback onRemove}) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 3/4,
+            child: kIsWeb 
+                ? Image.network(file.path, fit: BoxFit.cover) 
+                : Image.file(File(file.path), fit: BoxFit.cover),
+          ),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isFusionMode = _selectedImages.length >= 2;
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0, bottom: 120.0),
@@ -97,24 +137,29 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
           children: [
             const SizedBox(height: 10),
             Text(
-              "Face Enhancement",
+              isFusionMode ? "Synthora Fusion" : "Face Enhancement",
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textMain,
+                color: isFusionMode ? Colors.amber : AppTheme.textMain,
                 letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              "Transform your photos with AI magic",
+              isFusionMode 
+                ? "Extracting best features from ${_selectedImages.length} photos" 
+                : "Transform your photos with AI magic",
               style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
             ),
             const SizedBox(height: 40),
             
             if (_resultData != null) ...[
               // Result State: Masterpiece + Diagnostics
-              Text("Final Masterpiece", style: TextStyle(color: AppTheme.primary, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                isFusionMode ? "Fusion Masterpiece" : "Final Masterpiece", 
+                style: TextStyle(color: isFusionMode ? Colors.amber : AppTheme.primary, fontSize: 20, fontWeight: FontWeight.bold)
+              ),
               const SizedBox(height: 16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(24),
@@ -123,9 +168,15 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                   child: Image.network(_resultData!['enhanced_url'], fit: BoxFit.cover),
                 ),
               ),
+              const SizedBox(height: 12),
+              if (_resultData!['overall_score'] != null)
+                Text(
+                  "Quality Score: ${(_resultData!['overall_score'] as double).toStringAsFixed(1)}/100",
+                  style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
+                ),
               const SizedBox(height: 32),
               
-              Text("Diagnostics & CLIP Scores", style: TextStyle(color: AppTheme.textMain, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text("Feature Extraction Details", style: TextStyle(color: AppTheme.textMain, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               
               if (_resultData!['extracted_features'] != null)
@@ -136,7 +187,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                      decoration: BoxDecoration(
                        color: AppTheme.surface,
                        borderRadius: BorderRadius.circular(16),
-                       border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                       border: Border.all(color: (isFusionMode ? Colors.amber : AppTheme.primary).withOpacity(0.3)),
                      ),
                      child: Row(
                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -154,12 +205,12 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                          Container(
                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                            decoration: BoxDecoration(
-                             color: AppTheme.secondary.withOpacity(0.2),
+                             color: (isFusionMode ? Colors.amber : AppTheme.secondary).withOpacity(0.2),
                              borderRadius: BorderRadius.circular(20),
                            ),
                            child: Text(
-                             "CLIP: ${(feature['clip_score'] * 100).toInt()}%",
-                             style: const TextStyle(color: AppTheme.secondary, fontWeight: FontWeight.bold),
+                             "Quality: ${(feature['clip_score'] * 100).toInt()}%",
+                             style: TextStyle(color: isFusionMode ? Colors.amber : AppTheme.secondary, fontWeight: FontWeight.bold),
                            ),
                          ),
                        ],
@@ -167,18 +218,33 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                    );
                 }),
 
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  label: "Synthesize More",
-                  onPressed: () {
-                    setState(() {
-                      _selectedImages = [];
-                      _resultData = null;
-                    });
-                  },
-                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: CustomButton(
+                      label: "Synthesize More",
+                      onPressed: () {
+                        setState(() {
+                          _selectedImages = [];
+                          _resultData = null;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.download, color: Colors.white),
+                      onPressed: _downloadResult,
+                      tooltip: "Download Masterpiece",
+                    ),
+                  ),
+                ],
               ),
             ] else ...[
                // Upload Initial State
@@ -193,14 +259,14 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                        begin: Alignment.topLeft,
                        end: Alignment.bottomRight,
                        colors: [
-                          AppTheme.primary.withOpacity(0.15),
+                          (isFusionMode ? Colors.amber : AppTheme.primary).withOpacity(0.15),
                           AppTheme.surface,
                        ],
                      ),
-                     border: Border.all(color: AppTheme.secondary.withOpacity(0.2), width: 2),
+                     border: Border.all(color: (isFusionMode ? Colors.amber : AppTheme.secondary).withOpacity(0.2), width: 2),
                      boxShadow: [
                        BoxShadow(
-                         color: AppTheme.primary.withOpacity(0.05),
+                         color: (isFusionMode ? Colors.amber : AppTheme.primary).withOpacity(0.05),
                          blurRadius: 30,
                        ),
                      ],
@@ -215,12 +281,12 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                               shape: BoxShape.circle,
                               color: AppTheme.primary.withOpacity(0.1),
                             ),
-                            child: Icon(Icons.auto_awesome, size: 64, color: AppTheme.primary),
+                            child: Icon(Icons.auto_awesome_motion, size: 64, color: AppTheme.primary),
                           ),
                           const SizedBox(height: 24),
                           Text("Tap to select photos", style: TextStyle(color: AppTheme.textMain, fontSize: 18, fontWeight: FontWeight.w500)),
                           const SizedBox(height: 8),
-                          Text("Select up to 10 images.", style: TextStyle(color: AppTheme.textMuted)),
+                          Text("Select 2-10 photos for best fusion results.", style: TextStyle(color: AppTheme.textMuted)),
                         ],
                       )
                     : ListView.builder(
@@ -230,12 +296,13 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                         itemBuilder: (context, index) {
                           return Padding(
                             padding: const EdgeInsets.only(right: 16.0),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: AspectRatio(
-                                aspectRatio: 3/4,
-                                child: _buildImagePreview(_selectedImages[index]),
-                              ),
+                            child: _buildImagePreview(
+                              _selectedImages[index], 
+                              onRemove: () {
+                                setState(() {
+                                  _selectedImages.removeAt(index);
+                                });
+                              }
                             ),
                           );
                         },
@@ -253,14 +320,14 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                          children: [
                            Text("Enhancement Strength", style: TextStyle(color: AppTheme.textMain)),
-                           Text("${(_fidelityWeight * 100).toInt()}%", style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+                           Text("${(_fidelityWeight * 100).toInt()}%", style: TextStyle(color: isFusionMode ? Colors.amber : AppTheme.primary, fontWeight: FontWeight.bold)),
                          ],
                        ),
                        Slider(
                          value: _fidelityWeight,
                          min: 0.1,
                          max: 1.0,
-                         activeColor: AppTheme.primary,
+                         activeColor: isFusionMode ? Colors.amber : AppTheme.primary,
                          inactiveColor: AppTheme.surface,
                          onChanged: (val) {
                            setState(() {
@@ -271,8 +338,8 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                        const Row(
                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                          children: [
-                           Text("More AI", style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
-                           Text("Original", style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                           Text("More AI Fusion", style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                           Text("Keep Original", style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
                          ],
                        ),
                      ],
@@ -282,7 +349,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                  SizedBox(
                    width: double.infinity,
                    child: CustomButton(
-                     label: "Enhance Now ✨",
+                     label: isFusionMode ? "Start AI Fusion ✨" : "Enhance Now ✨",
                      onPressed: _startProcessing,
                    ),
                  ),

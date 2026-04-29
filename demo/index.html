@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clarity AI | Next-Gen Face Enhancement</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.3);
+            --bg: #0f172a;
+            --glass: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(79, 70, 229, 0.1) 0%, transparent 40%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        #file-input { display: none; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 var(--primary-glow);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 var(--primary-glow);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .result-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .result-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .loader {
+            display: none;
+            margin: 2rem auto;
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: var(--primary);
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #history {
+            margin-top: 4rem;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .history-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Clarity AI</h1>
+    <p style="color: #94a3b8">Next-Gen Facial Enhancement & Synthesis</p>
+</header>
+
+<div class="container">
+    <div class="glass-card">
+        <div class="upload-area" id="drop-zone">
+            <svg style="width: 48px; height: 48px; color: #94a3b8; margin-bottom: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem">Drag & Drop images here</p>
+            <p style="color: #64748b; font-size: 0.9rem">or click to browse (up to 10 photos)</p>
+            <input type="file" id="file-input" multiple accept="image/*">
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; align-items: center; justify-content: center; gap: 2rem;">
+            <div style="flex: 1">
+                <label style="display: block; margin-bottom: 0.5rem; color: #94a3b8; font-size: 0.9rem">Fidelity Balance</label>
+                <input type="range" id="fidelity" min="0" max="1" step="0.1" value="0.5" style="width: 100%">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-top: 0.25rem">
+                    <span>AI Strength</span>
+                    <span>High Fidelity</span>
+                </div>
+            </div>
+            <button class="btn" id="enhance-btn">Enhance Photos</button>
+        </div>
+    </div>
+
+    <div class="loader" id="loader"></div>
+
+    <div id="results-container" class="results-grid"></div>
+
+    <div id="history">
+        <h2 style="font-family: Outfit; margin-bottom: 1.5rem">Recent Creations</h2>
+        <div class="glass-card" id="history-list">
+            <p style="color: #64748b; text-align: center">No history yet.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://127.0.0.1:5001";
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const enhanceBtn = document.getElementById('enhance-btn');
+    const loader = document.getElementById('loader');
+    const resultsContainer = document.getElementById('results-container');
+    const historyList = document.getElementById('history-list');
+
+    let selectedFiles = [];
+
+    dropZone.onclick = () => fileInput.click();
+
+    fileInput.onchange = (e) => {
+        selectedFiles = Array.from(e.target.files);
+        dropZone.innerHTML = `<p>${selectedFiles.length} files selected</p>`;
+    };
+
+    enhanceBtn.onclick = async () => {
+        if (selectedFiles.length === 0) return alert("Select images first!");
+
+        loader.style.display = 'block';
+        resultsContainer.innerHTML = '';
+
+        const formData = new FormData();
+        selectedFiles.forEach(file => formData.append('images', file));
+        formData.append('fidelity_weight', document.getElementById('fidelity').value);
+
+        try {
+            const res = await fetch(`${API_BASE}/upload-images`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                renderResults(data.results);
+                loadHistory();
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Connection error. Make sure the backend is running.");
+        } finally {
+            loader.style.display = 'none';
+        }
+    };
+
+    function renderResults(results) {
+        results.forEach(res => {
+            const div = document.createElement('div');
+            div.className = 'result-item glass-card';
+            div.innerHTML = `
+                <img src="${API_BASE}${res.enhanced_url}" alt="Enhanced">
+                <div style="padding: 1rem">
+                    <p style="font-size: 0.8rem; color: #94a3b8">${res.original}</p>
+                    <a href="${API_BASE}${res.enhanced_url}" download class="btn" style="display: block; text-align: center; margin-top: 1rem; padding: 0.5rem">Download</a>
+                </div>
+            `;
+            resultsContainer.appendChild(div);
+        });
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch(`${API_BASE}/user-history`);
+            const data = await res.json();
+            
+            if (data.history.length > 0) {
+                historyList.innerHTML = data.history.map(item => `
+                    <div class="history-item">
+                        <img src="${API_BASE}${item.enhanced_url}">
+                        <div>
+                            <p style="font-weight: 600">${item.original_name}</p>
+                            <p style="font-size: 0.75rem; color: #64748b">${new Date(item.created_at).toLocaleString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (err) {}
+    }
+
+    loadHistory();
+</script>
+
+</body>
+</html>

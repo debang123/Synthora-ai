@@ -24,12 +24,22 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
   int _currentStepIndex = 0;
   Map<String, dynamic>? _resultData;
 
-  final List<String> _steps = [
-    "Detecting objects with YOLO...",
-    "Segmenting features with DeepLab...",
-    "Scoring quality with AI CLIP...",
-    "Compositing final masterpiece..."
-  ];
+  List<String> get _steps {
+    if (widget.imageFiles.length >= 2) {
+      return [
+        "Analyzing ${widget.imageFiles.length} photos for best features...",
+        "Aligning facial landmarks across frames...",
+        "Synthesizing high-fidelity composite...",
+        "Applying neural beautification...",
+      ];
+    }
+    return [
+      "Detecting objects with YOLO...",
+      "Segmenting features with DeepLab...",
+      "Scoring quality with AI CLIP...",
+      "Compositing final masterpiece..."
+    ];
+  }
 
   @override
   void initState() {
@@ -54,11 +64,19 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
       if (mounted) setState(() => _currentStepIndex = 3);
     });
 
-    // Actual API Call
-    final data = await _apiService.enhanceImages(
-      widget.imageFiles,
-      fidelityWeight: widget.fidelityWeight,
-    );
+    // Use synthesis endpoint for 2+ images, enhance for single
+    Map<String, dynamic>? data;
+    if (widget.imageFiles.length >= 2) {
+      data = await _apiService.synthesizeFeatures(
+        widget.imageFiles,
+        fidelityWeight: widget.fidelityWeight,
+      );
+    } else {
+      data = await _apiService.enhanceImages(
+        widget.imageFiles,
+        fidelityWeight: widget.fidelityWeight,
+      );
+    }
 
     if (mounted) {
       setState(() {
@@ -82,6 +100,8 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final isSynthesis = widget.imageFiles.length >= 2;
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -103,14 +123,21 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    "Processing...",
-                    style: TextStyle(
+                  Text(
+                    isSynthesis ? "AI Fusion..." : "Processing...",
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
+                  if (isSynthesis) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      "Extracting best features from ${widget.imageFiles.length} images",
+                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 14),
+                    ),
+                  ],
                   const SizedBox(height: 48),
 
                   // Checklist Items
@@ -143,7 +170,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
                                 shape: BoxShape.circle,
                                 gradient: SweepGradient(
                                   colors: [
-                                    AppTheme.secondary,
+                                    isSynthesis ? Colors.amber : AppTheme.secondary,
                                     AppTheme.primary,
                                     Colors.transparent,
                                   ],
@@ -160,8 +187,12 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
                           shape: BoxShape.circle,
                           color: AppTheme.background,
                         ),
-                        child: const Center(
-                          child: Icon(Icons.auto_awesome, size: 60, color: Colors.white),
+                        child: Center(
+                          child: Icon(
+                            isSynthesis ? Icons.merge_type : Icons.auto_awesome, 
+                            size: 60, 
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
@@ -212,7 +243,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> with SingleTickerPr
                        )),
           ),
           const SizedBox(width: 16),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
+          Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 16))),
         ],
       ),
     );
