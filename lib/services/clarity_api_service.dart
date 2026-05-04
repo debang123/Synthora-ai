@@ -8,13 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class ClarityApiService {
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5001';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5001';
-    }
-    return 'http://localhost:5001';
+    return 'https://synthora-backend-jncc.onrender.com';
   }
 
   final ImagePicker _picker = ImagePicker();
