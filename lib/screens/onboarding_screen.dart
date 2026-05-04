@@ -43,7 +43,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   void _startAutoPlay() {
-    _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_currentPage < 4) {
         _pageController.nextPage(
           duration: const Duration(milliseconds: 400),
@@ -117,6 +118,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       setState(() {
                         _currentPage = index;
                       });
+                      if (index < 4) {
+                        _startAutoPlay(); // Restart timer on manual swipe/key press
+                      } else {
+                        _autoPlayTimer?.cancel();
+                      }
                     },
                     itemCount: 5, // 4 info slides + 1 final slide
                     itemBuilder: (context, index) {
