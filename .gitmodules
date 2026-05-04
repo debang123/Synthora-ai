@@ -1,0 +1,3 @@
+[submodule "ai-service/CodeFormer"]
+	path = ai-service/CodeFormer
+	url = https://github.com/sczhou/CodeFormer.git
