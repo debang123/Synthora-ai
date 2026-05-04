@@ -6,5 +6,5 @@ torchvision
 opencv-python-headless
 facexlib
 numpy
-basicsr
+git+https://github.com/xinntao/BasicSR.git
 gdown

@@ -4,6 +4,8 @@ set -e
 
 echo "Installing Python dependencies..."
 pip install --upgrade pip
+pip install setuptools wheel
+pip install git+https://github.com/xinntao/BasicSR.git
 pip install -r requirements.txt
 
 echo "Preparing CodeFormer..."
