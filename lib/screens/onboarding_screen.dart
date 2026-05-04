@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../utils/theme.dart';
 import '../widgets/custom_button.dart';
 
@@ -12,6 +13,7 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  Timer? _autoPlayTimer;
 
   final List<Map<String, dynamic>> onboardingData = [
     {
@@ -40,6 +42,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   ];
 
+  void _startAutoPlay() {
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_currentPage < 4) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _autoPlayTimer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoPlay();
+  }
+
+  @override
+  void dispose() {
+    _autoPlayTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +94,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     alignment: Alignment.topRight,
                     child: _currentPage < 4 
                         ? TextButton(
-                            onPressed: () => _pageController.animateToPage(4, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut),
+                            onPressed: () {
+                              _autoPlayTimer?.cancel();
+                              Navigator.pushReplacementNamed(context, '/login');
+                            },
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.white.withOpacity(0.05),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
